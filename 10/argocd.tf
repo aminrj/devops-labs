@@ -26,3 +26,12 @@ resource "helm_release" "argocd" {
 
   values = [file("values/argocd.yaml")]
 }
+
+# ArgoCD Bootstrap the app of apps 
+resource "null_resource" "argocd_bootstrap" {
+  provisioner "local-exec" {
+    command = "kubectl apply -f k8s/applications.yaml"
+  }
+
+  depends_on = [helm_release.argocd]
+}
