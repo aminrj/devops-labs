@@ -1,0 +1,22 @@
+applications: 
+- name: helm-app
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  project: default
+  source:
+    repoURL: https://github.com/aminrj/10-gitops.git
+    targetRevision: HEAD
+    path: dev/apps
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false
+      allowEmpty: false
+    syncOptions:
+    - CreateNamespace=true
+    - Validate=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
