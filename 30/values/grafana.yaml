@@ -1,0 +1,22 @@
+persistence.enabled: true
+persistence.size: 10Gi
+persistence.existingClaim: grafana-pvc
+persistence.accessModes[0]: ReadWriteOnce
+persistence.storageClassName: standard
+  
+adminUser: admin
+adminPassword: grafana
+
+datasources: 
+ datasources.yaml:
+   apiVersion: 1
+   datasources:
+    - name: Loki
+      type: loki
+      access: proxy
+      orgId: 1
+      url: http://loki-gateway.observability.svc.cluster.local
+      basicAuth: false
+      isDefault: true
+      version: 1
+      editable: false

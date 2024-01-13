@@ -1,0 +1,13 @@
+extraVolumes:
+  - name: node-logs
+    hostPath:
+      path: /var/log
+
+extraVolumeMounts:
+  - name: node-logs
+    mountPath: /var/log/host
+    readOnly: true
+
+# Add Loki as a client to Promtail
+clients:
+  - url: http://loki-gateway.observability.svc.cluster.local/loki/api/v1/push
