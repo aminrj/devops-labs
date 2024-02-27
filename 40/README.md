@@ -266,3 +266,5 @@ logs from our kubernetes node.
 We can log into our Grafana using the credentials configured in the value file above.
 
 We head to the **Explore** tab and check our audit logs.
+
+🌟🌟🌟 Found this useful, consider leaving a start 🌟 on the project, it encourages me to produce more content like this 💖.
