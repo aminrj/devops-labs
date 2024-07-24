@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-producer
+  template:
+    metadata:
+      labels:
+        app: log-producer
+    spec:
+      containers:
+      - name: log-producer
+        image: secdevopsjourney/my-log-producer:v4
+        env:
+        - name: KAFKA_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kafka-user-secret
+              key: password
+        volumeMounts:
+        - name: log-volume
+          mountPath: /app/log/file.log
+          readOnly: true
+      volumes:
+      - name: log-volume
+        hostPath:
+          path: /var/log/kubernetes/audit/audit.log

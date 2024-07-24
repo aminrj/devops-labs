@@ -1,0 +1,22 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaUser
+metadata:
+  name: audit-logs-producer
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: audit-logs-topic
+          patternType: literal
+        operation: Write
+      - resource:
+          type: group
+          name: my-consumer-group
+          patternType: literal
+        operation: Read
