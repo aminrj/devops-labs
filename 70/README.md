@@ -1,9 +1,8 @@
-# Deploy Kafka on Kubernetes
+# Kafka Cluster install on Kubernetes and Monitoring with Grafana
 
 This tutorial walks through how to:
 
 - Deploy a Kafka cluster within Kubernetes using Strimzi Kafka Operator
-- Create a simple application that uses the deployed Kafka cluster
 - Enable monitoring of usefull Kafka metrics with Prometheus and Grafana
 
 ## Deploy Kafka on Kubernetes (using Minikube)
@@ -36,11 +35,62 @@ This tutorial walks through how to:
    kubectl apply -f kafka
    ```
 
-## Setup Metrics for our Kafka Cluster
+  ```bash
+   $ kubectl -n kafka get po
+NAME                                        READY   STATUS    RESTARTS   AGE
+strimzi-cluster-operator-6948497896-swlvp   1/1     Running   0          77s
+```
+
+## Kafka Cluster with Strimzi
+
+Now that our Strimzi-Kafka-Operator is up and running in our newly created Kubernetes cluster, we create the Kafka cluster by applying the following yaml file with the command : 
+
+```bash
+kubectl apply -n kafka -f kafka-persistent.yaml
+```
+
+In the kafka namespace, we see that our cluster is up and running and that we have 3 replicas of our cluster as well as 3 replicas of the zookeeper:
+
+```bash
+➜  $ kubectl -n kafka get po
+NAME                                         READY   STATUS    RESTARTS   AGE
+my-cluster-entity-operator-5d7c9f484-94zdt   2/2     Running   0          22s
+my-cluster-kafka-0                           1/1     Running   0          45s
+my-cluster-kafka-1                           1/1     Running   0          45s
+my-cluster-kafka-2                           1/1     Running   0          45s
+my-cluster-zookeeper-0                       1/1     Running   0          112s
+my-cluster-zookeeper-1                       1/1     Running   0          112s
+my-cluster-zookeeper-2                       1/1     Running   0          112s
+strimzi-cluster-operator-6948497896-swlvp    1/1     Running   0          4m9s
+```
+
+To create Kafka entities (producers, consumers, topics), we use the Kubernetes CRD installed by the Strimzi Operator to do so.
+
+```bash
+➜  70 git:(main) ✗ kubectl -n kafka apply -f kafka/kafka-topic.yaml
+kafkatopic.kafka.strimzi.io/my-topic created
+```
+
+To produce some events to our topic, we run the following command:
+
+```bash
+echo "Hello KafkaOnKubernetes" | kubectl -n kafka exec -i my-cluster-kafka-0 -c kafka -- \
+    bin/kafka-console-producer.sh --broker-list localhost:9092 --topic my-topic
+```
+
+To test consuming this event, we run:
+
+```bash
+➜  kubectl -n kafka exec -i my-cluster-kafka-0 -c kafka -- bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic my-topic --from-beginning
+Hello KafkaOnKubernetes
+```
+
+
+
+## Monitoring our Kafka Cluster with Grafana
 
 Collecting metrics is critical for understanding the health and performance of our Kafka cluster.
 This is important to identify issues before they become critical and make informed decisions about resource allocation and capacity planning.
-Furthermore, without clear visibility into the behavior of our Kafka deployment, troubleshooting becomes more difficult and time-consuming.
 
 For this, we will use Prometheus and Grafana to monitor Strimzi.
 Prometheus consumes metrics from the running pods in your cluster when configured with Prometheus rules.
@@ -71,14 +121,36 @@ Then, deploy the Prometheus Operator:
 
 ```bash
 kubectl -n observability create -f prometheus-operator-deployment.yaml
+customresourcedefinition.apiextensions.k8s.io/alertmanagerconfigs.monitoring.coreos.com created
+customresourcedefinition.apiextensions.k8s.io/alertmanagers.monitoring.coreos.com created
+customresourcedefinition.apiextensions.k8s.io/podmonitors.monitoring.coreos.com created
+customresourcedefinition.apiextensions.k8s.io/probes.monitoring.coreos.com created
+customresourcedefinition.apiextensions.k8s.io/prometheusagents.monitoring.coreos.com created
+customresourcedefinition.apiextensions.k8s.io/prometheuses.monitoring.coreos.com created
+customresourcedefinition.apiextensions.k8s.io/prometheusrules.monitoring.coreos.com created
+customresourcedefinition.apiextensions.k8s.io/scrapeconfigs.monitoring.coreos.com created
+customresourcedefinition.apiextensions.k8s.io/servicemonitors.monitoring.coreos.com created
+customresourcedefinition.apiextensions.k8s.io/thanosrulers.monitoring.coreos.com created
+clusterrolebinding.rbac.authorization.k8s.io/prometheus-operator created
+clusterrole.rbac.authorization.k8s.io/prometheus-operator created
+deployment.apps/prometheus-operator created
+serviceaccount/prometheus-operator created
+service/prometheus-operator created
 ```
 
 Now that we have the operator up and running, we need to create the Prometheus server and configure it to watch for Strimzi CRDs in the `kafka` namespace.
+
 Note here that the name of the namespace must match otherwise Prometheus Operator won't scrap any resources we deploy.
 
 ```bash
-kubectl -n observability apply -f strimzi-pod-monitor.yaml
-kubectl -n observability apply -f prometheus.yaml
+➜  70 git:(main) ✗ kubectl -n observability apply -f strimzi-pod-monitor.yaml
+...
+
+➜  70 git:(main) ✗ kubectl -n observability create -f observability/prometheus-install/prometheus.yaml
+clusterrole.rbac.authorization.k8s.io/prometheus-server created
+serviceaccount/prometheus-server created
+clusterrolebinding.rbac.authorization.k8s.io/prometheus-server created
+prometheus.monitoring.coreos.com/prometheus created
 ```
 
 ### Configuring our Kafka cluster to expose metrics
