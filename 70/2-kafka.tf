@@ -5,6 +5,5 @@ resource "helm_release" "strimzi-cluster-operator" {
   chart = "strimzi-kafka-operator"
   version = "0.42.0"
   namespace = kubernetes_namespace.kafka-namespace.metadata[0].name
-#   values = [file("${path.module}/values/kafka.yaml")]
   depends_on = [kubernetes_namespace.kafka-namespace]
 }
