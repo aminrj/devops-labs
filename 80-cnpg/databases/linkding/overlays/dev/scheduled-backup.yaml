@@ -1,0 +1,11 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: full-backup-now
+  namespace: cnpg-dev
+spec:
+  immediate: true
+  schedule: "0 3 * * *" # daily at 03:00
+  backupOwnerReference: cluster
+  cluster:
+    name: linkding-db-dev-cnpg-v1
