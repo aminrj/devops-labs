@@ -6,21 +6,25 @@ spec:
   generators:
     - git:
         repoURL: https://github.com/aminrj/devops-labs.git
-        revision: ha-posgtgres-cnpg
+        # revision: ha-posgtgres-cnpg
+        revision: main
         directories:
           - path: "80-cnpg/databases/*/overlays/*"
   template:
     metadata:
-      name: "{{path.basename}}-db"
+      # name: "{{path.basename}}-db"
+      name: '{{path[2]}}-db-{{path[4]}}'
     spec:
       project: default
       source:
         repoURL: https://github.com/aminrj/devops-labs.git
         targetRevision: main
-        path: "{{path}}"
+        # path: "{{path}}"
+        path: 'databases/{{path[2]}}/overlays/{{path[4]}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: cnpg-dev
+        # namespace: cnpg-dev
+        namespace: 'cnpg-{{path[4]}}'  # or '{{path[1]}}-{{path[3]}}' if you want unique namespaces per app+env
       syncPolicy:
         automated:
           prune: true
