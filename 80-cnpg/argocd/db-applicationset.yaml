@@ -9,7 +9,7 @@ spec:
         # revision: ha-posgtgres-cnpg
         revision: main
         directories:
-          - path: "80-cnpg/databases/*/overlays/*"
+          - path: 80-cnpg/databases/*/overlays/*
   template:
     metadata:
       # name: "{{path.basename}}-db"
