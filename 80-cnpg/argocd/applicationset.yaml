@@ -20,7 +20,7 @@ spec:
         repoURL: https://github.com/aminrj/devops-labs.git
         targetRevision: main
         # path: "{{path}}"
-        path: 'apps/{{path[2]}}/overlays/{{path[4]}}' #Example: apps/nextjs-app/dev
+        path: '80-cnpg/apps/{{path[2]}}/overlays/{{path[4]}}' #Example: apps/nextjs-app/dev
       destination:
         server: https://kubernetes.default.svc
         # namespace: "{{path.basename}}"

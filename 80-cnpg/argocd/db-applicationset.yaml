@@ -20,7 +20,7 @@ spec:
         repoURL: https://github.com/aminrj/devops-labs.git
         targetRevision: main
         # path: "{{path}}"
-        path: 'databases/{{path[2]}}/overlays/{{path[4]}}'
+        path: '80-cnpg/databases/{{path[2]}}/overlays/{{path[4]}}'
       destination:
         server: https://kubernetes.default.svc
         # namespace: cnpg-dev
