@@ -20,8 +20,27 @@ terraform {
       source  = "hashicorp/time",
       version = "~> 0.10"
     }
+    kubectl = {
+      source  = "gavinbunney/kubectl",
+      version = ">= 1.14.0"
+    }
   }
 }
+
+provider "helm" {
+  kubernetes {
+    config_path = pathexpand("~/.kube/config")
+  }
+}
+
+provider "kubernetes" {
+  config_path = pathexpand("~/.kube/config")
+}
+
+provider "kubectl" {
+  config_path = pathexpand("~/.kube/config")
+}
+
 
 provider "azurerm" {
   features {}
@@ -179,4 +198,23 @@ resource "azurerm_key_vault_secret" "db_password" {
   name         = "linkding-db-password"
   value        = random_password.db_pwd.result
   key_vault_id = azurerm_key_vault.this.id
+}
+
+# Install ArgoCD with Helm
+resource "helm_release" "argocd" {
+  name       = "argocd"
+  namespace  = "argocd"
+  chart      = "argo-cd"
+  repository = "https://argoproj.github.io/argo-helm"
+  version    = "5.46.0"
+
+  create_namespace = true
+}
+
+resource "kubectl_manifest" "argocd_self_managed" {
+  depends_on = [helm_release.argocd]
+
+  yaml_body = templatefile("${path.module}/argocd-config.yaml", {
+    TARGET_SERVER = var.target_cluster_server
+  })
 }

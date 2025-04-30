@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-config
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/aminrj/devops-labs.git
+    targetRevision: main
+    path: 80-cnpg/argocd/
+  destination:
+    # server: https://kubernetes.default.svc
+    server: "${TARGET_SERVER}"
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
