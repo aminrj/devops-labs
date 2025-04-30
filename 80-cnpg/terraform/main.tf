@@ -1,72 +1,182 @@
+############################################################
+# Providers
+############################################################
 terraform {
-  required_version = ">= 1.5.0"
-
+  required_version = ">= 1.5"
   required_providers {
-    helm = {
-      source  = "hashicorp/helm"
-      version = ">= 2.9.0"
+    azurerm = {
+      source  = "hashicorp/azurerm",
+      version = "~> 3.99"
     }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = ">= 2.22.0"
+    azuread = {
+      source  = "hashicorp/azuread",
+      version = "~> 2.50"
+    }
+    random = {
+      source  = "hashicorp/random",
+      version = "~> 3.6"
+    }
+    time = {
+      source  = "hashicorp/time",
+      version = "~> 0.10"
     }
   }
 }
 
-variable "kubeconfig" {
-  description = "Path to your kubeconfig file"
-  type        = string
-  default     = "~/.kube/config"
+provider "azurerm" {
+  features {}
 }
 
-provider "helm" {
-  kubernetes {
-    config_path = var.kubeconfig
+provider "azuread" {}
+
+############################################################
+# Caller’s tenant / subscription info
+############################################################
+data "azurerm_client_config" "current" {}
+
+############################################################
+# 1.  Resource Group
+############################################################
+resource "azurerm_resource_group" "this" {
+  name     = var.resource_group_name
+  location = var.location
+}
+
+############################################################
+# 2.  Key Vault
+############################################################
+resource "azurerm_key_vault" "this" {
+  name                        = var.key_vault_name
+  location                    = azurerm_resource_group.this.location
+  resource_group_name         = azurerm_resource_group.this.name
+  tenant_id                   = data.azurerm_client_config.current.tenant_id
+  sku_name                    = "standard"
+  enable_rbac_authorization   = true
+}
+
+############################################################
+# 3.  Storage account → container → SAS token
+############################################################
+resource "azurerm_storage_account" "backup" {
+  name                     = var.storage_account_name
+  resource_group_name      = azurerm_resource_group.this.name
+  location                 = azurerm_resource_group.this.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_storage_container" "db" {
+  name                  = var.container_name
+  storage_account_name  = azurerm_storage_account.backup.name
+  container_access_type = "private"
+}
+
+resource "time_static" "sas_start" {}
+
+
+data "azurerm_storage_account_sas" "sas" {
+  connection_string = azurerm_storage_account.backup.primary_connection_string
+  signed_version    = "2022-11-02"
+
+  https_only = true
+  start      = time_static.sas_start.rfc3339
+  expiry     = timeadd(time_static.sas_start.rfc3339, "8760h") # 1 year
+
+  resource_types {
+    service   = true
+    container = true
+    object    = true
+  }
+
+  services {
+    blob  = true
+    queue = false
+    table = false
+    file  = false
+  }
+
+  permissions {
+    read    = true
+    write   = true
+    delete  = true
+    list    = true
+    add     = true
+    create  = true
+    update  = false
+    process = false
+    tag     = false
+    filter  = false
   }
 }
 
-# CloudNativePG operator
-resource "helm_release" "cnpg" {
-  name             = "cloudnative-pg"
-  repository       = "https://cloudnative-pg.github.io/charts"
-  chart            = "cloudnative-pg"
-  version          = "0.20.1"  # matches CNPG 1.22.x
-  namespace        = "cnpg-system"
-  create_namespace = true
-
-  set {
-    name  = "monitoring.enabled"
-    value = true
-  }
+############################################################
+# 4.  Azure AD app / Service-Principal for ESO
+############################################################
+resource "azuread_application" "eso" {
+  display_name = var.app_name
 }
 
-# External‑Secrets operator
-resource "helm_release" "external_secrets" {
-  name             = "external-secrets"
-  repository       = "https://charts.external-secrets.io"
-  chart            = "external-secrets"
-  version          = "0.9.16"
-  namespace        = "external-secrets"
-  create_namespace = true
-
-  set {
-    name  = "installCRDs"
-    value = true
-  }
+resource "azuread_service_principal" "eso" {
+  client_id = azuread_application.eso.client_id
 }
 
-# (Optional) Argo CD
-resource "helm_release" "argo_cd" {
-  name             = "argocd"
-  repository       = "https://argoproj.github.io/argo-helm"
-  chart            = "argo-cd"
-  version          = "5.51.6"
-  namespace        = "argocd"
-  create_namespace = true
+resource "azuread_service_principal_password" "eso" {
+  service_principal_id = azuread_service_principal.eso.id
+  end_date_relative    = "8760h"
+}
 
-  # Reduce footprint for a lab / homelab
-  set {
-    name  = "configs.params.server.insecure"
-    value = true
-  }
+############################################################
+# 5.  Role assignments (ESO + Terraform runner)
+############################################################
+resource "azurerm_role_assignment" "eso_kv_reader" {
+  principal_id         = azuread_service_principal.eso.id
+  role_definition_name = "Key Vault Secrets User"
+  scope                = azurerm_key_vault.this.id
+}
+
+resource "azurerm_role_assignment" "secrets_officer" {
+  principal_id         = data.azurerm_client_config.current.object_id
+  role_definition_name = "Key Vault Secrets Officer"
+  scope                = azurerm_key_vault.this.id
+}
+
+############################################################
+# 6.  Seed Key Vault secrets (SAS + backup path + DB creds)
+############################################################
+resource "azurerm_key_vault_secret" "sas_token" {
+  name         = "${var.container_name}-blob-sas"
+  value        = data.azurerm_storage_account_sas.sas.sas
+  key_vault_id = azurerm_key_vault.this.id
+}
+
+resource "azurerm_key_vault_secret" "container_name" {
+  name         = "${var.container_name}-container-name"
+  value        = var.container_name
+  key_vault_id = azurerm_key_vault.this.id
+
+  depends_on = [azurerm_role_assignment.secrets_officer]
+}
+
+resource "azurerm_key_vault_secret" "destination_path" {
+  name         = "${var.container_name}-destination-path"
+  value        = "https://${var.storage_account_name}.blob.core.windows.net/${var.container_name}"
+  key_vault_id = azurerm_key_vault.this.id
+}
+
+# Linkding DB credentials
+resource "random_password" "db_pwd" {
+  length  = 32
+  special = true
+}
+
+resource "azurerm_key_vault_secret" "db_user" {
+  name         = "linkding-db-username"
+  value        = var.db_username
+  key_vault_id = azurerm_key_vault.this.id
+}
+
+resource "azurerm_key_vault_secret" "db_password" {
+  name         = "linkding-db-password"
+  value        = random_password.db_pwd.result
+  key_vault_id = azurerm_key_vault.this.id
 }
