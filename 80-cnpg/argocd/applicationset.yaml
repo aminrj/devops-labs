@@ -25,7 +25,7 @@ spec:
         server: https://kubernetes.default.svc
         # namespace: "{{path.basename}}"
         namespace: '{{path[4]}}' # dev, qa, prod as namespace (simpler - for now)
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
+      # syncPolicy:
+      #   automated:
+      #     prune: true
+      #     selfHeal: true
