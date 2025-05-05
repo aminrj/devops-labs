@@ -218,3 +218,29 @@ resource "kubectl_manifest" "argocd_self_managed" {
     TARGET_SERVER = var.target_cluster_server
   })
 }
+
+resource "helm_release" "external_secrets" {
+    name             = "external-secrets"
+    namespace        = "external-secrets"
+    repository       = "https://charts.external-secrets.io"
+    chart            = "external-secrets"
+    version          = "0.9.13"
+    create_namespace = true
+
+    set {
+        name  = "installCRDs"
+        value = true
+      }
+}
+
+resource "helm_release" "cnpg_operator" {
+  name             = "cloudnative-pg"
+  # namespace        = var.namespace
+  namespace        = "cnpg" #TODO change this
+  repository       = "https://cloudnative-pg.github.io/charts"
+  chart            = "cloudnative-pg"
+  version          = "0.23.2"
+  create_namespace = true
+  wait             = true
+
+}
