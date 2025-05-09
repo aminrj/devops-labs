@@ -33,3 +33,4 @@ override.tf.json
 .terraformrc
 terraform.rc
 80-cnpg/terraform/.terraform.lock.hcl
+90-n8n/terraform/.terraform.lock.hcl
