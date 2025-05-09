@@ -22,7 +22,7 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: 'cnpg-{{path[4]}}'  # or '{{path[1]}}-{{path[3]}}' if you want unique namespaces per app+env
-      # syncPolicy:
-      #   automated:
-      #     prune: true
-      #     selfHeal: true
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
