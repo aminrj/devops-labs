@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/aminrj/devops-labs.git
     targetRevision: main
-    path: 80-cnpg/argocd/
+    path: 90-n8n/argocd/
   destination:
     # server: https://kubernetes.default.svc
     server: "${TARGET_SERVER}"
