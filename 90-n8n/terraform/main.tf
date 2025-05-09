@@ -182,21 +182,49 @@ resource "azurerm_key_vault_secret" "destination_path" {
   key_vault_id = azurerm_key_vault.this.id
 }
 
+# resource "random_password" "db_pwd" {
+#   length  = 32
+#   special = true
+# }
+#
+# resource "azurerm_key_vault_secret" "db_user" {
+#   name         = "n8n-db-username"
+#   value        = var.db_username
+#   key_vault_id = azurerm_key_vault.this.id
+# }
+#
+# resource "azurerm_key_vault_secret" "db_password" {
+#   name         = "n8n-db-password"
+#   value        = random_password.db_pwd.result
+#   key_vault_id = azurerm_key_vault.this.id
+# }
+
 # n8n DB credentials
-resource "random_password" "db_pwd" {
+resource "random_password" "n8n_db_pwd" {
   length  = 32
   special = true
 }
 
-resource "azurerm_key_vault_secret" "db_user" {
+resource "azurerm_key_vault_secret" "n8n_db_user" {
   name         = "n8n-db-username"
-  value        = var.db_username
+  value        = "n8n"
   key_vault_id = azurerm_key_vault.this.id
 }
 
-resource "azurerm_key_vault_secret" "db_password" {
+resource "azurerm_key_vault_secret" "n8n_db_password" {
   name         = "n8n-db-password"
-  value        = random_password.db_pwd.result
+  value        = random_password.n8n_db_pwd.result
+  key_vault_id = azurerm_key_vault.this.id
+}
+
+resource "random_password" "n8n_encryption_key" {
+  length  = 64
+  special = true
+}
+
+resource "azurerm_key_vault_secret" "n8n_encryption_key" {
+  name         = "n8n-encryption-key"
+  value        = random_password.n8n_encryption_key.result
   key_vault_id = azurerm_key_vault.this.id
 }
 
