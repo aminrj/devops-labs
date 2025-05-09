@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/aminrj/devops-labs.git
+        revision: main
+        directories:
+          - path: 90-n8n/apps/*/overlays/*
+  template:
+    metadata:
+      name: '{{path[2]}}-{{path[4]}}' # example: commafeed-dev, listmonk-qa...
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/aminrj/devops-labs.git
+        targetRevision: main
+        path: '90-n8n/apps/{{path[2]}}/overlays/{{path[4]}}' #Example: apps/nextjs-app/dev
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path[4]}}' # dev, qa, prod as namespace (simpler - for now)
+      # syncPolicy:
+      #   automated:
+      #     prune: true
+      #     selfHeal: true

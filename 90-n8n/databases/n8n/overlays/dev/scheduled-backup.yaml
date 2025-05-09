@@ -1,0 +1,10 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: full-backup-now
+spec:
+  immediate: true
+  schedule: "0 3 * * *" # daily at 03:00
+  backupOwnerReference: cluster
+  cluster:
+    name: n8n-db-dev-cnpg-v1

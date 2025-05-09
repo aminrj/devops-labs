@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: databases
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/aminrj/devops-labs.git
+        revision: main
+        directories:
+          - path: 90-n8n/databases/*/overlays/*
+  template:
+    metadata:
+      name: '{{path[2]}}-db-{{path[4]}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/aminrj/devops-labs.git
+        targetRevision: main
+        # path: "{{path}}"
+        path: '90-n8n/databases/{{path[2]}}/overlays/{{path[4]}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'cnpg-{{path[4]}}'  # or '{{path[1]}}-{{path[3]}}' if you want unique namespaces per app+env
+      # syncPolicy:
+      #   automated:
+      #     prune: true
+      #     selfHeal: true

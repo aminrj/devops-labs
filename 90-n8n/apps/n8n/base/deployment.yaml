@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: linkding
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: linkding
+  template:
+    metadata:
+      labels:
+        app: linkding
+    spec:
+      containers:
+        - name: linkding
+          image: sissbruecker/linkding:latest
+          ports:
+            - containerPort: 9090
+          env:
+            - name: LD_DB_ENGINE
+              value: django.db.backends.postgresql
+            - name: LD_DB_HOST
+              value: pg-dev-rw.cnpg-dev.svc.cluster.local
+            - name: LD_DB_PORT
+              value: "5432"
+            - name: LD_DB_NAME
+              value: linkding
+            - name: LD_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: linkding-db-secret
+                  key: username
+            - name: LD_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: linkding-db-secret
+                  key: password
+          volumeMounts:
+            - name: linkding-data
+              mountPath: /etc/linkding/data
+      volumes:
+        - name: linkding-data
+          emptyDir: {}
