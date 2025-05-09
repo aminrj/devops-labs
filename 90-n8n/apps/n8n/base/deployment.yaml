@@ -16,15 +16,15 @@ spec:
       containers:
         - name: n8n
           image: docker.n8n.io/n8nio/n8n:latest
-          ports:
-            - containerPort: 5678
+          # ports:
+          #   - containerPort: 5678
           env:
             - name: DB_TYPE
               value: postgresdb
             - name: DB_POSTGRESDB_DATABASE
               value: n8n
             - name: DB_POSTGRESDB_HOST
-              value: n8n-db-rw.cnpg-dev.svc.cluster.local
+              value: n8n-db-cnpg-v1-rw.cnpg-dev.svc.cluster.local
             - name: DB_POSTGRESDB_PORT
               value: "5432"
             - name: DB_POSTGRESDB_USER

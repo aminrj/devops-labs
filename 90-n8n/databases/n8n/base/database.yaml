@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: n8n-db-dev-cnpg-v1
+  name: n8n-db-cnpg-v1
 spec:
   description: Postgres cluster for the n8n application
   imageName: quay.io/enterprisedb/postgresql:16.1
