@@ -16,8 +16,8 @@ spec:
       containers:
         - name: n8n
           image: docker.n8n.io/n8nio/n8n:latest
-          # ports:
-          #   - containerPort: 5678
+          ports:
+            - containerPort: 5678
           env:
             - name: DB_TYPE
               value: postgresdb
@@ -48,6 +48,8 @@ spec:
                 secretKeyRef:
                   name: n8n-encryption
                   key: key
+            - name: N8N_PORT
+              value: "5678"
           volumeMounts:
             - name: n8n-data
               mountPath: /home/node/.n8n
