@@ -1,3 +1,4 @@
+# databases/n8n/base/database.yaml
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
